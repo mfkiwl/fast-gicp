@@ -24,6 +24,19 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -pthread")
 
 LIST(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake_modules")
 
+# ros包
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  sensor_msgs
+  std_msgs
+  pcl_ros
+  ndt_omp
+)
+include_directories(
+  include
+  ${catkin_INCLUDE_DIRS}
+)
+
 # PCL
 FIND_PACKAGE(PCL REQUIRED QUIET)
 IF(PCL_FOUND) 

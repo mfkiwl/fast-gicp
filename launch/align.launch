@@ -4,6 +4,11 @@
         <param name="litamin_target_size"  value="5" />
         <param name="pcd_1"  value= "/home/xyw/catkin_ws/src/test_registration/data/251370668.pcd"/>
         <param name="pcd_2"  value= "/home/xyw/catkin_ws/src/test_registration/data/251371071.pcd"/>
+        <param name="vgicp_direct_method" value="DIRECT1"/>
+        <param name="vgicp_resolution" value="1.0"/>
+        <param name= "transform_epsilon" value="1e-2"/>
+        <param name="MaxCorrespondenceDistance" value="0.5"/>
+        <param name ="num_threads" value="4"/>
     </node>
     
 </launch>

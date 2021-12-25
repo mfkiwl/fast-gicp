@@ -50,6 +50,12 @@ static std::vector<Eigen::Vector3i, Eigen::aligned_allocator<Eigen::Vector3i>> n
 
 class Vector3iHash {
 public:
+/**
+ * @brief TODO 似乎是用一个hash value来代替向量。
+ * 
+ * @param x 
+ * @return size_t 
+ */
   size_t operator()(const Eigen::Vector3i& x) const {
     size_t seed = 0;
     boost::hash_combine(seed, x[0]);
@@ -148,7 +154,7 @@ public:
             voxel = std::shared_ptr<MultiplicativeGaussianVoxel>(new MultiplicativeGaussianVoxel);
             break;
         }
-        found = voxels_.insert(found, std::make_pair(coord, voxel));
+        found = voxels_.insert(found, std::make_pair(coord, voxel)); // 用hash组织坐标，就不太会浪费
       }
 
       auto& voxel = found->second;
@@ -159,11 +165,12 @@ public:
       voxel.second->finalize();
     }
   }
-
+  // 计算voxel的坐标，由于会有hash，因此实际上不必减0.5
   Eigen::Vector3i voxel_coord(const Eigen::Vector4d& x) const {
+    // 四舍五入后减1
     return (x.array() / voxel_resolution_ - 0.5).floor().template cast<int>().template head<3>();
   }
-
+  // 未被使用
   Eigen::Vector4d voxel_origin(const Eigen::Vector3i& coord) const {
     Eigen::Vector3d origin = (coord.template cast<double>().array() + 0.5) * voxel_resolution_;
     return Eigen::Vector4d(origin[0], origin[1], origin[2], 1.0f);
@@ -181,7 +188,8 @@ public:
 private:
   double voxel_resolution_;
   VoxelAccumulationMode voxel_mode_;
-
+  // 使用自定义的hash类型来模板化unorder_map
+  // 存储的voxelmap是基类指针
   using VoxelMap = std::unordered_map<Eigen::Vector3i, GaussianVoxel::Ptr, Vector3iHash, std::equal_to<Eigen::Vector3i>, Eigen::aligned_allocator<std::pair<const Eigen::Vector3i, GaussianVoxel::Ptr>>>;
   VoxelMap voxels_;
 };

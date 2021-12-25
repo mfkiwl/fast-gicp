@@ -12,6 +12,7 @@
 #include <fast_gicp/gicp/fast_gicp.hpp>
 #include <fast_gicp/gicp/fast_gicp_st.hpp>
 #include <fast_gicp/gicp/fast_vgicp.hpp>
+#include <ros/ros.h>
 
 #ifdef USE_VGICP_CUDA
 #include <fast_gicp/ndt/ndt_cuda.hpp>
@@ -108,20 +109,29 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
  * @brief main
  */
 int main(int argc, char** argv) {
-  if (argc < 3) {
-    std::cout << "usage: gicp_align target_pcd source_pcd" << std::endl;
-    return 0;
+  ros::init(argc,argv,"align_node");
+  ros::NodeHandle nh("~");
+  std::string pcd1 = nh.param<std::string>("pcd_1","");
+  std::string pcd2 = nh.param<std::string>("pcd_2","");
+  std::string vgicp_direct_method = nh.param<std::string>("vgicp_direct_method","DIRECT1");
+  double vgicp_resolution = nh.param<double>("vgicp_resolution",1.0);
+  double transform_epsilon = nh.param<double>("transform_epsilon",1e-2);
+  double MaxCorrespondenceDistance = nh.param<double>("MaxCorrespondenceDistance",0.5);
+  int num_threads = nh.param<int>("num_threads",4);
+  fast_gicp::NeighborSearchMethod nn_method;
+  if(vgicp_direct_method == "DIRECT1"){
+    nn_method = fast_gicp::NeighborSearchMethod::DIRECT1;
   }
 
   pcl::PointCloud<pcl::PointXYZ>::Ptr target_cloud(new pcl::PointCloud<pcl::PointXYZ>());
   pcl::PointCloud<pcl::PointXYZ>::Ptr source_cloud(new pcl::PointCloud<pcl::PointXYZ>());
 
-  if (pcl::io::loadPCDFile(argv[1], *target_cloud)) {
-    std::cerr << "failed to open " << argv[1] << std::endl;
+  if (pcl::io::loadPCDFile(pcd1, *target_cloud)) {
+    std::cerr << "failed to open " << pcd1 << std::endl;
     return 1;
   }
-  if (pcl::io::loadPCDFile(argv[2], *source_cloud)) {
-    std::cerr << "failed to open " << argv[2] << std::endl;
+  if (pcl::io::loadPCDFile(pcd2, *source_cloud)) {
+    std::cerr << "failed to open " << pcd2 << std::endl;
     return 1;
   }
   int a = 0;
@@ -171,34 +181,36 @@ int main(int argc, char** argv) {
   std::cout << "--- fgicp_mt ---" << std::endl;
   fast_gicp::FastGICP<pcl::PointXYZ, pcl::PointXYZ> fgicp_mt;
   // fast_gicp uses all the CPU cores by default
-  fgicp_mt.setNumThreads(4);
-  fgicp_mt.setMaxCorrespondenceDistance(0.5);
-  fgicp_mt.setTransformationEpsilon(1e-2);
+  fgicp_mt.setNumThreads(num_threads);
+  fgicp_mt.setMaxCorrespondenceDistance(MaxCorrespondenceDistance);
+  fgicp_mt.setTransformationEpsilon(transform_epsilon);
   test(fgicp_mt, target_cloud, source_cloud);
 
   std::cout << "--- fgicp_ceres ---" << std::endl;
   fast_gicp::FastGICP<pcl::PointXYZ, pcl::PointXYZ> fgicp_ceres;
   // fast_gicp uses all the CPU cores by default
-  fgicp_ceres.setNumThreads(4);
-  fgicp_ceres.setTransformationEpsilon(1e-2);
-  fgicp_ceres.setMaxCorrespondenceDistance(0.5);
+  fgicp_ceres.setNumThreads(num_threads);
+  fgicp_ceres.setTransformationEpsilon(transform_epsilon);
+  fgicp_ceres.setMaxCorrespondenceDistance(MaxCorrespondenceDistance);
   fgicp_ceres.setLocalParameterization(true);
   fgicp_ceres.setLSQType(fast_gicp::LSQ_OPTIMIZER_TYPE::CeresDogleg);
   test(fgicp_ceres, target_cloud, source_cloud);
 
   // std::cout << "--- vgicp_st ---" << std::endl;
-  // fast_gicp::FastVGICP<pcl::PointXYZ, pcl::PointXYZ> vgicp;
+  fast_gicp::FastVGICP<pcl::PointXYZ, pcl::PointXYZ> vgicp;
   // vgicp.setResolution(1.0);
   // vgicp.setNumThreads(1);
   // vgicp.setMaxCorrespondenceDistance(0.5);
-  // fgicp_ceres.setTransformationEpsilon(1e-2);
+  // fvgicp.setTransformationEpsilon(1e-2);
   // test(vgicp, target_cloud, source_cloud);
 
-  // std::cout << "--- vgicp_mt ---" << std::endl;
-  // vgicp.setNumThreads(4);
-  // fgicp_ceres.setTransformationEpsilon(1e-2);
-  // fgicp_ceres.setMaxCorrespondenceDistance(0.5);
-  // test(vgicp, target_cloud, source_cloud);
+  std::cout << "--- vgicp_mt ---" << std::endl;
+  vgicp.setNumThreads(num_threads);
+  vgicp.setTransformationEpsilon(transform_epsilon);
+  vgicp.setMaxCorrespondenceDistance(MaxCorrespondenceDistance);
+  vgicp.setResolution(vgicp_resolution);
+
+  test(vgicp, target_cloud, source_cloud);
 
 #ifdef USE_VGICP_CUDA
   std::cout << "--- ndt_cuda (P2D) ---" << std::endl;
