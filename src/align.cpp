@@ -68,7 +68,7 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
   auto t2 = std::chrono::high_resolution_clock::now();
   fitness_score = reg.getFitnessScore();
   double single = std::chrono::duration_cast<std::chrono::nanoseconds>(t2 - t1).count() / 1e6;
-  std::cout << "align result: \n" << reg.getFinalTransformation() << std::endl; 
+  std::cout << "align result: \n" << reg.getFinalTransformation() << std::endl;
   std::cout << "single:" << single << "[msec] " << std::endl;
 
   // // 100 times
@@ -109,17 +109,17 @@ void test(Registration& reg, const pcl::PointCloud<pcl::PointXYZ>::ConstPtr& tar
  * @brief main
  */
 int main(int argc, char** argv) {
-  ros::init(argc,argv,"align_node");
+  ros::init(argc, argv, "align_node");
   ros::NodeHandle nh("~");
-  std::string pcd1 = nh.param<std::string>("pcd_1","");
-  std::string pcd2 = nh.param<std::string>("pcd_2","");
-  std::string vgicp_direct_method = nh.param<std::string>("vgicp_direct_method","DIRECT1");
-  double vgicp_resolution = nh.param<double>("vgicp_resolution",1.0);
-  double transform_epsilon = nh.param<double>("transform_epsilon",1e-2);
-  double MaxCorrespondenceDistance = nh.param<double>("MaxCorrespondenceDistance",0.5);
-  int num_threads = nh.param<int>("num_threads",4);
+  std::string pcd1 = nh.param<std::string>("pcd_1", "");
+  std::string pcd2 = nh.param<std::string>("pcd_2", "");
+  std::string vgicp_direct_method = nh.param<std::string>("vgicp_direct_method", "DIRECT1");
+  double vgicp_resolution = nh.param<double>("vgicp_resolution", 1.0);
+  double transform_epsilon = nh.param<double>("transform_epsilon", 1e-2);
+  double MaxCorrespondenceDistance = nh.param<double>("MaxCorrespondenceDistance", 0.5);
+  int num_threads = nh.param<int>("num_threads", 4);
   fast_gicp::NeighborSearchMethod nn_method;
-  if(vgicp_direct_method == "DIRECT1"){
+  if (vgicp_direct_method == "DIRECT1") {
     nn_method = fast_gicp::NeighborSearchMethod::DIRECT1;
   }
 
@@ -159,18 +159,22 @@ int main(int argc, char** argv) {
 
   std::cout << "target:" << target_cloud->size() << "[pts] source:" << source_cloud->size() << "[pts]" << std::endl;
 
-  // std::cout << "--- pcl_gicp ---" << std::endl;
-  // pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> pcl_gicp;
-  // pcl_gicp.setTransformationEpsilon(1e-2);
-  // pcl_gicp.setMaxCorrespondenceDistance(0.5);
-  // test_pcl(pcl_gicp, target_cloud, source_cloud);
+  Eigen::Matrix4d T_gt;
+  T_gt << 0.999839, -0.0178499, 0.00126124, 0.597882, 0.0178505, 0.99984, -0.000564532, 0.0176337, -0.00125099, 0.000586967, 0.999998, 0.00494815, 0, 0, 0, 1;
+  std::cout << "gt: \n" <<  T_gt << std::endl; 
 
-  // std::cout << "--- pcl_ndt ---" << std::endl;
-  // pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> pcl_ndt;
-  // pcl_ndt.setResolution(1.0);
-  // pcl_ndt.setTransformationEpsilon(1e-2);
-  // pcl_ndt.setMaxCorrespondenceDistance(0.5);
-  // test_pcl(pcl_ndt, target_cloud, source_cloud);
+  std::cout << "--- pcl_gicp ---" << std::endl;
+  pcl::GeneralizedIterativeClosestPoint<pcl::PointXYZ, pcl::PointXYZ> pcl_gicp;
+  pcl_gicp.setTransformationEpsilon(1e-2);
+  pcl_gicp.setMaxCorrespondenceDistance(0.5);
+  test_pcl(pcl_gicp, target_cloud, source_cloud);
+
+  std::cout << "--- pcl_ndt ---" << std::endl;
+  pcl::NormalDistributionsTransform<pcl::PointXYZ, pcl::PointXYZ> pcl_ndt;
+  pcl_ndt.setResolution(1.0);
+  pcl_ndt.setTransformationEpsilon(1e-2);
+  pcl_ndt.setMaxCorrespondenceDistance(0.5);
+  test_pcl(pcl_ndt, target_cloud, source_cloud);
 
   // std::cout << "--- fgicp_st ---" << std::endl;
   // fast_gicp::FastGICPSingleThread<pcl::PointXYZ, pcl::PointXYZ> fgicp_st;

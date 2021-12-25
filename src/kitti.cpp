@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
   // 导出pcd
   // for(int i = 0;i < kitti.size();i++){
   //   pcl::PointCloud<pcl::PointXYZI> cloud = *kitti.cloud(i);
-  //   std::string filename = (boost::format("%s/pcd/%010d.pcd") % argv[1] % i).str();
+  //   std::string filename = (boost::format("%s/../pcd/%06d.pcd") % argv[1] % i).str();
   //   pcl::io::savePCDFileBinary(filename,cloud);
   // }
   // return 0;
